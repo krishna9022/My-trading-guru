@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="hi">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chaudhary Trading AI v3</title><link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header><h1>Chaudhary Trading AI</h1><p>Market Analysis • Learning • Paper Trading</p></header>
+<main>
+<section class="card">
+<h2>Market Analysis</h2>
+<div class="row"><input id="symbol" value="AAPL" placeholder="Symbol e.g. AAPL"><select id="interval"><option value="1day">1 Day</option><option value="1h">1 Hour</option><option value="15min">15 Min</option></select><button onclick="analyze()">Analyze</button></div>
+<div id="status">Checking data connection…</div>
+</section>
+<section class="grid">
+<div class="card"><span>Signal</span><strong id="signal">—</strong></div>
+<div class="card"><span>Score</span><strong id="score">—</strong></div>
+<div class="card"><span>Price</span><strong id="price">—</strong></div>
+<div class="card"><span>RSI</span><strong id="rsi">—</strong></div>
+</section>
+<section class="card"><h2>Indicators</h2><p id="indicators">Analyze a symbol to see SMA20, SMA50, RSI and volume evidence.</p><ul id="reasons"></ul></section>
+<section class="card warning"><b>Important:</b> This is an educational analysis and paper-trading tool. It cannot guarantee future prices and does not place real-money orders.</section>
+</main>
+<script>
+async function loadStatus(){
+ const r=await fetch('/api/status'); const j=await r.json();
+ document.getElementById('status').textContent=j.configured
+ ? '🟢 Market-data API connected: '+j.provider
+ : '🟡 API key not configured — add TWELVE_DATA_API_KEY on the server.';
+}
+async function analyze(){
+ const s=document.getElementById('symbol').value.trim();
+ const i=document.getElementById('interval').value;
+ document.getElementById('status').textContent='Loading market data…';
+ try{
+  const r=await fetch('/api/analyze?symbol='+encodeURIComponent(s)+'&interval='+i);
+  const j=await r.json(); if(!r.ok) throw new Error(j.error);
+  const a=j.analysis;
+  document.getElementById('signal').textContent=a.signal;
+  document.getElementById('score').textContent=a.score;
+  document.getElementById('price').textContent=Number(a.price).toFixed(2);
+  document.getElementById('rsi').textContent=a.rsi===null?'—':Number(a.rsi).toFixed(1);
+  document.getElementById('indicators').textContent=
+   `SMA20: ${a.sma20?.toFixed(2)??'—'} | SMA50: ${a.sma50?.toFixed(2)??'—'} | RSI14: ${a.rsi?.toFixed(1)??'—'}`;
+  document.getElementById('reasons').innerHTML=a.reasons.map(x=>'<li>'+x+'</li>').join('');
+  document.getElementById('status').textContent='🟢 Data received from '+j.provider;
+ }catch(e){document.getElementById('status').textContent='❌ '+e.message;}
+}
+loadStatus();
+</script>
+</body></html>
